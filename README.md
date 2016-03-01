@@ -1,3 +1,3 @@
 # Snow-System
 
-<img src="https://github.com/williamcheungthu/Snow-System/blob/master/screen-shot.jpg">
+<img src="https://github.com/william-cheung/Snow-System/blob/master/screen-shot.jpg">
