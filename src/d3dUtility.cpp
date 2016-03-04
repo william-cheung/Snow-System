@@ -14,11 +14,13 @@
 
 #include "d3dUtility.h"
 
+// #include <algorithm> // for std::min, std::max
+
 // vertex formats
 const DWORD d3d::Vertex::FVF = D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX1;
 
 
-bool d3d::InitD3D(
+HWND d3d::InitD3D(
 	HINSTANCE hInstance,
 	int width, int height,
 	bool windowed,
@@ -57,7 +59,7 @@ bool d3d::InitD3D(
 	if( !hwnd )
 	{
 		::MessageBox(0, "CreateWindow() - FAILED", 0, 0);
-		return false;
+		return 0;
 	}
 
 	::ShowWindow(hwnd, SW_SHOW);
@@ -142,7 +144,7 @@ bool d3d::InitD3D(
 
 	d3d9->Release(); // done with d3d9 object
 	
-	return true;
+	return hwnd;
 }
 
 int d3d::EnterMsgLoop( bool (*ptr_display)(float timeDelta) )

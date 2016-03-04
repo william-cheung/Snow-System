@@ -23,6 +23,7 @@ public:
 	Cube(IDirect3DDevice9* device, 
 		std::string texConfig = "", TexturingType texType = TEXTYPE_EXTERNAL);
 	~Cube();
+	d3d::BoundingBox getBoundingBox() const;
 	bool draw(const D3DXMATRIX* world, const D3DMATERIAL9* mtrl);
 
 protected:

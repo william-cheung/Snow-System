@@ -24,7 +24,7 @@ namespace d3d
 	//
 	// Init
 	//
-	bool InitD3D(
+	HWND InitD3D(
 		HINSTANCE hInstance,       // [in] Application instance.
 		int width, int height,     // [in] Backbuffer dimensions.
 		bool windowed,             // [in] Windowed (true)or full screen (false).
@@ -120,17 +120,7 @@ namespace d3d
 	//
 
 	const float INF = FLT_MAX;
-	const float EPSILON  = 0.001f;
-
-	//
-	// Drawing
-	//
-
-	// Function references "desert.bmp" internally.  This file must
-	// be in the working directory.
-	bool DrawBasicScene(
-		IDirect3DDevice9* device,// Pass in 0 for cleanup.
-		float scale);            // uniform scale 
+	const float EPSILON  = 0.001f; 
 
 	//
 	// Vertex Structures

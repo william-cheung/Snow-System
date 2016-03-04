@@ -15,6 +15,9 @@
 #include "cube.h"
 #include "snowman.h"
 #include "terrain.h"
+
+#include <cstdio>
+
 //
 // Globals
 //
@@ -27,6 +30,11 @@ const int Height = 600;
 psys::PSystem* Sno = 0;
 
 Camera TheCamera(Camera::AIRCRAFT);
+
+bool   IsOrbiting = false;  // is the camera orbiting
+
+HWND   HWnd       = NULL;
+bool   IsMousing  = false;  // are we using mouse to control
 
 bool DisplayBasicScene(IDirect3DDevice9* device);
 
@@ -66,6 +74,96 @@ bool Setup()
 	Device->SetTransform(D3DTS_PROJECTION, &proj);
 
 	return true;
+}
+
+void HandleKeyboardInput(float timeDelta) {
+
+	if (!IsOrbiting) {
+		if (::GetAsyncKeyState('W') & 0x8000f)
+			TheCamera.walk(4.0f * timeDelta);
+
+		if (::GetAsyncKeyState('S') & 0x8000f)
+			TheCamera.walk(-4.0f * timeDelta);
+
+		if (::GetAsyncKeyState('A') & 0x8000f)
+			TheCamera.strafe(-4.0f * timeDelta);
+
+		if (::GetAsyncKeyState('D') & 0x8000f)
+			TheCamera.strafe(4.0f * timeDelta);
+
+		if (::GetAsyncKeyState('R') & 0x8000f)
+			TheCamera.fly(4.0f * timeDelta);
+
+		if (::GetAsyncKeyState('F') & 0x8000f)
+			TheCamera.fly(-4.0f * timeDelta);
+	}
+
+	if (::GetAsyncKeyState('X') & 0x8000f) // free the camera
+		IsOrbiting = false;
+
+	if (::GetAsyncKeyState(VK_UP) & 0x8000f)
+		TheCamera.pitch(1.0f * timeDelta);
+
+	if (::GetAsyncKeyState(VK_DOWN) & 0x8000f)
+		TheCamera.pitch(-1.0f * timeDelta);
+
+	if (::GetAsyncKeyState(VK_LEFT) & 0x8000f)
+		TheCamera.yaw(-1.0f * timeDelta);
+
+	if (::GetAsyncKeyState(VK_RIGHT) & 0x8000f)
+		TheCamera.yaw(1.0f * timeDelta);
+}
+
+void HandleMouseInput() {
+
+	static POINT lastMousePosition;
+
+	POINT currMousePosition;
+
+	GetCursorPos(&currMousePosition);
+	ScreenToClient(HWnd, &currMousePosition);
+
+	if (IsMousing)
+	{
+		int nXDiff = (currMousePosition.x - lastMousePosition.x);
+		int nYDiff = (currMousePosition.y - lastMousePosition.y);
+
+		D3DXVECTOR3 vRight, vLook, vUp;
+		TheCamera.getRight(&vRight), TheCamera.getLook(&vLook), TheCamera.getUp(&vUp);
+
+		D3DXMATRIX matRotation;
+
+		if (nYDiff != 0)
+		{
+			D3DXMatrixRotationAxis(&matRotation, &vRight, D3DXToRadian((float)nYDiff / 3.0f));
+			D3DXVec3TransformCoord(&vLook, &vLook, &matRotation);
+			D3DXVec3TransformCoord(&vUp, &vUp, &matRotation);
+		}
+
+		if (nXDiff != 0)
+		{
+			D3DXMatrixRotationAxis(&matRotation, &D3DXVECTOR3(0, 1, 0), D3DXToRadian((float)nXDiff / 3.0f));
+			D3DXVec3TransformCoord(&vLook, &vLook, &matRotation);
+			D3DXVec3TransformCoord(&vUp, &vUp, &matRotation);
+		}
+
+		TheCamera.setRight(&vRight), TheCamera.setLook(&vLook), TheCamera.setUp(&vUp);
+	}
+
+	lastMousePosition = currMousePosition;
+}
+
+void HandleRealTimeUserInput(float timeDelta)
+{
+	//
+	// Handle mouse input...
+	//
+	HandleMouseInput();
+
+	//
+	// Handle keyboard input...
+	//
+	HandleKeyboardInput(timeDelta);
 }
 
 bool DrawSkybox(IDirect3DDevice9* device, const Camera* camera) 
@@ -156,13 +254,32 @@ bool DisplayBasicScene(IDirect3DDevice9* device)
 		snowman->draw(&P);  // draw the 1st snowman
 
 		static float fDegree = 0.0f;
-		fDegree += 0.002f;
+		fDegree += 0.001f;
 		if (fDegree > 2.0f * D3DX_PI) fDegree = 0.0f;
 
 		D3DXMatrixTranslation(&T, 10.0f, -1.0f, 0.0f);
 		D3DXMatrixRotationY(&R, fDegree);
 		P = T * R * C;
 		crate->draw(&P, &d3d::WHITE_MTRL);
+
+		// collision detection
+		d3d::BoundingBox crateBox = crate->getBoundingBox();
+		D3DXVECTOR3 cameraPosition;
+		TheCamera.getPosition(&cameraPosition);
+		D3DXMATRIX X;
+		D3DXMatrixInverse(&X, 0, &P);
+		D3DXVec3TransformCoord(&cameraPosition, &cameraPosition, &X);
+		if (crateBox.isPointInside(cameraPosition)) 
+			IsOrbiting = true;
+
+		if (IsOrbiting) { 
+			// the camera orbits the 1st snowman
+			D3DXMatrixTranslation(&T, 0.0f, 2.0f, 0.0f);
+			D3DXVECTOR3 newPosition(0.0f, 0.0f, 0.0f);
+			P = P * T;
+			D3DXVec3TransformCoord(&newPosition, &newPosition, &P);
+			TheCamera.setPosition(&newPosition);
+		}
 
 		D3DXMatrixScaling(&S, 0.6, 0.6, 0.6);
 		D3DXMatrixTranslation(&T, 10.0f, 0.0f, 0.0f);
@@ -178,48 +295,6 @@ void Cleanup()
 	DisplayBasicScene(0);
 }
 
-//
-// Update the states of TheCamera according to the key clicked
-//
-void HandleKeyClicks(float timeDelta) {
-
-	if (::GetAsyncKeyState('W') & 0x8000f)
-		TheCamera.walk(4.0f * timeDelta);
-
-	if (::GetAsyncKeyState('S') & 0x8000f)
-		TheCamera.walk(-4.0f * timeDelta);
-
-	if (::GetAsyncKeyState('A') & 0x8000f)
-		TheCamera.strafe(-4.0f * timeDelta);
-
-	if (::GetAsyncKeyState('D') & 0x8000f)
-		TheCamera.strafe(4.0f * timeDelta);
-
-	if (::GetAsyncKeyState('R') & 0x8000f)
-		TheCamera.fly(4.0f * timeDelta);
-
-	if (::GetAsyncKeyState('F') & 0x8000f)
-		TheCamera.fly(-4.0f * timeDelta);
-
-	if (::GetAsyncKeyState(VK_UP) & 0x8000f)
-		TheCamera.pitch(1.0f * timeDelta);
-
-	if (::GetAsyncKeyState(VK_DOWN) & 0x8000f)
-		TheCamera.pitch(-1.0f * timeDelta);
-
-	if (::GetAsyncKeyState(VK_LEFT) & 0x8000f)
-		TheCamera.yaw(-1.0f * timeDelta);
-
-	if (::GetAsyncKeyState(VK_RIGHT) & 0x8000f)
-		TheCamera.yaw(1.0f * timeDelta);
-
-	if (::GetAsyncKeyState('N') & 0x8000f)
-		TheCamera.roll(1.0f * timeDelta);
-
-	if (::GetAsyncKeyState('M') & 0x8000f)
-		TheCamera.roll(-1.0f * timeDelta);
-}
-
 bool Display(float timeDelta)
 {
 	if( Device )
@@ -228,7 +303,7 @@ bool Display(float timeDelta)
 		// Update the scene:
 		//
 
-		HandleKeyClicks(timeDelta); 
+		HandleRealTimeUserInput(timeDelta); 
 
 		D3DXMATRIX V;
 		TheCamera.getViewMatrix(&V);
@@ -273,7 +348,15 @@ LRESULT CALLBACK d3d::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		if( wParam == VK_ESCAPE )
 			::DestroyWindow(hwnd);
 		break;
+
+	case WM_LBUTTONDOWN:
+		IsMousing = true;
+		break;
+	case WM_LBUTTONUP:
+		IsMousing = false;
+		break;
 	}
+		   
 	return ::DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
@@ -285,8 +368,10 @@ int WINAPI WinMain(HINSTANCE hinstance,
 				   PSTR cmdLine,
 				   int showCmd)
 {
-	if(!d3d::InitD3D(hinstance,
-		Width, Height, true, D3DDEVTYPE_HAL, &Device))
+	HWnd = d3d::InitD3D(hinstance,
+		Width, Height, true, D3DDEVTYPE_HAL, &Device);
+
+	if (!HWnd)
 	{
 		::MessageBox(0, "InitD3D() - FAILED", 0, 0);
 		return 0;

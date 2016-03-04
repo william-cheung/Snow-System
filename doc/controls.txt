@@ -1,0 +1,13 @@
+   Control Keys: W          - View moves forward
+                 S          - View moves backward
+                 A          - View strafes left
+                 D          - View strafes Right
+                 Left Mouse - Perform looking
+                 Mouse      - Look about the scene
+                 R          - View moves up
+                 F          - View moves down
+                 Up         - View pitches down
+                 Down       - View pitches up
+                 Left       - View yaws left
+                 Right      - View yaws right
+                 X          - Free the camera if it is orbiting a snowman

@@ -72,6 +72,13 @@ Cube::~Cube()
 	}
 }
 
+d3d::BoundingBox Cube::getBoundingBox() const {
+	d3d::BoundingBox box;
+	box._min = D3DXVECTOR3(-1.0f, -1.0f, -1.0f);
+	box._max = D3DXVECTOR3(1.0f, 1.0f, 1.0f);
+	return box;
+}
+
 bool Cube::draw(const D3DXMATRIX* world, const D3DMATERIAL9* mtrl)
 {
 	if (world)

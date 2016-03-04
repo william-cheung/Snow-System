@@ -7,6 +7,8 @@
 // System: AMD Athlon 1800+ XP, 512 DDR, Geforce 3, Windows XP, MSVC++ 7.0 
 //
 // Desc: Defines a camera's position and orientation.
+//
+// * Modified by William Cheung
 //         
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -38,8 +40,11 @@ public:
 	void setPosition(D3DXVECTOR3* pos); 
 
 	void getRight(D3DXVECTOR3* right);
+	void setRight(D3DXVECTOR3* right);
 	void getUp(D3DXVECTOR3* up);
+	void setUp(D3DXVECTOR3* up);
 	void getLook(D3DXVECTOR3* look);
+	void setLook(D3DXVECTOR3* look);
 private:
 	CameraType  _cameraType;
 	D3DXVECTOR3 _right;
